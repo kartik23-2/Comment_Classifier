@@ -9,7 +9,6 @@ profanity_model = joblib.load("profanity_model.pkl")
 
 app = FastAPI(title="Comment Filter API", version="1.0")
 
-# Input schema
 class Comment(BaseModel):
     text: str
 
@@ -21,20 +20,27 @@ def home():
 def check_comment(comment: Comment):
     text = comment.text
 
-    # Spam Check 
-    spam_pred = spam_model.predict([text])[0]
+    # ----------- SPAM CHECK WITH THRESHOLD -----------
     try:
-        spam_prob = spam_model.predict_proba([text])[0].max()
+        spam_prob = spam_model.predict_proba([text])[0][1]   # probability of spam class
     except:
-        spam_prob = 1.0  # for models without predict_proba
+        spam_prob = 1.0
 
-    # Profanity Check 
-    prof_pred = profanity_model.predict([text])[0]
+    spam_threshold = 0.6
+    spam_pred = 1 if spam_prob >= spam_threshold else 0
+
+
+    # ----------- PROFANITY CHECK WITH THRESHOLD -----------
     try:
-        prof_prob = profanity_model.predict_proba([text])[0].max()
+        prof_prob = profanity_model.predict_proba([text])[0][1]
     except:
         prof_prob = 1.0
 
+    prof_threshold = 0.6
+    prof_pred = 1 if prof_prob >= prof_threshold else 0
+
+
+    # ----------- RESPONSE -----------
     result = {
         "text": text,
         "spam_check": {
